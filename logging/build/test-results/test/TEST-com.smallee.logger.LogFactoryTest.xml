@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.smallee.logger.LogFactoryTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-02-21T04:18:18" hostname="Mac-35.lan" time="0.024">
+  <properties/>
+  <testcase name="create by name returns a Logger instance()" classname="com.smallee.logger.LogFactoryTest" time="0.019"/>
+  <testcase name="create by Class returns a Logger instance()" classname="com.smallee.logger.LogFactoryTest" time="0.001"/>
+  <testcase name="create by reified type and create by Class produce the same name()" classname="com.smallee.logger.LogFactoryTest" time="0.001"/>
+  <testcase name="create by reified type returns a Logger instance()" classname="com.smallee.logger.LogFactoryTest" time="0.0"/>
+  <testcase name="create by name returns Logger with the given name()" classname="com.smallee.logger.LogFactoryTest" time="0.001"/>
+  <testcase name="create by reified type returns Logger named after the type()" classname="com.smallee.logger.LogFactoryTest" time="0.0"/>
+  <testcase name="create by Class returns Logger named after the class()" classname="com.smallee.logger.LogFactoryTest" time="0.0"/>
+  <testcase name="create by name with empty string returns Logger with empty name()" classname="com.smallee.logger.LogFactoryTest" time="0.0"/>
+  <testcase name="create by Class uses the fully qualified class name()" classname="com.smallee.logger.LogFactoryTest" time="0.001"/>
+  <testcase name="each call to create returns a distinct Logger instance()" classname="com.smallee.logger.LogFactoryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.smallee.logger.LoggerTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-02-21T04:18:18" hostname="Mac-35.lan" time="0.006">
+  <properties/>
+  <testcase name="info throws NotImplementedError()" classname="com.smallee.logger.LoggerTest" time="0.001"/>
+  <testcase name="warn throws NotImplementedError()" classname="com.smallee.logger.LoggerTest" time="0.0"/>
+  <testcase name="isTraceEnabled throws NotImplementedError()" classname="com.smallee.logger.LoggerTest" time="0.0"/>
+  <testcase name="isInfoEnabled throws NotImplementedError()" classname="com.smallee.logger.LoggerTest" time="0.0"/>
+  <testcase name="getName returns the name passed to the constructor()" classname="com.smallee.logger.LoggerTest" time="0.0"/>
+  <testcase name="getName returns name with special characters unchanged()" classname="com.smallee.logger.LoggerTest" time="0.0"/>
+  <testcase name="isErrorEnabled throws NotImplementedError()" classname="com.smallee.logger.LoggerTest" time="0.001"/>
+  <testcase name="trace throws NotImplementedError()" classname="com.smallee.logger.LoggerTest" time="0.0"/>
+  <testcase name="isWarnEnabled throws NotImplementedError()" classname="com.smallee.logger.LoggerTest" time="0.0"/>
+  <testcase name="isDebugEnabled throws NotImplementedError()" classname="com.smallee.logger.LoggerTest" time="0.0"/>
+  <testcase name="debug throws NotImplementedError()" classname="com.smallee.logger.LoggerTest" time="0.0"/>
+  <testcase name="error throws NotImplementedError()" classname="com.smallee.logger.LoggerTest" time="0.0"/>
+  <testcase name="getName returns empty string when constructed with empty name()" classname="com.smallee.logger.LoggerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
