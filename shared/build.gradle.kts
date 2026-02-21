@@ -10,6 +10,9 @@ repositories {
 }
 
 dependencies {
+
+    api(libs.opentelemetryApi)
+
     testImplementation(kotlin("test"))
 }
 
