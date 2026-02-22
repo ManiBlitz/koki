@@ -1,0 +1,222 @@
+name: CI
+
+# ─────────────────────────────────────────────────────────
+# Triggers
+# ─────────────────────────────────────────────────────────
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+# ─────────────────────────────────────────────────────────
+# Permissions
+# security-events: write  → upload Snyk SARIF to Security tab
+# pull-requests:   write  → allow status check annotations on PRs
+# ─────────────────────────────────────────────────────────
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+# Cancel in-flight runs of the same workflow/branch to save minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# ─────────────────────────────────────────────────────────
+# Shared defaults
+# ─────────────────────────────────────────────────────────
+defaults:
+  run:
+    shell: bash
+
+jobs:
+
+  # ═══════════════════════════════════════════════════════
+  # 1 · SPOTLESS – Code Formatting Check
+  # ═══════════════════════════════════════════════════════
+  spotless-check:
+    name: Spotless – Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          # Only write to the cache from the main branch to prevent cache poisoning
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Run SpotlessCheck
+        run: ./gradlew spotlessCheck --no-daemon
+
+  # ═══════════════════════════════════════════════════════
+  # 2 · BUILD, TEST & SONARQUBE – Coverage Analysis
+  #
+  # Prerequisites in your Gradle build:
+  #   • org.sonarqube plugin applied in root build.gradle.kts
+  #   • jacoco plugin applied in kotlin-jvm convention plugin
+  #   • SONAR_TOKEN and SONAR_HOST_URL stored as GitHub secrets
+  #   • (SonarCloud) SONAR_ORGANIZATION stored as a GitHub secret
+  # ═══════════════════════════════════════════════════════
+  build-and-analyze:
+    name: Build, Test & SonarQube
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Full history is required by SonarQube for blame information
+          fetch-depth: 0
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Build and run tests with JaCoCo coverage
+        run: ./gradlew build jacocoTestReport --no-daemon
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/build/test-results/**/*.xml'
+          retention-days: 7
+
+      - name: Upload JaCoCo coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: '**/build/reports/jacoco/**/*.xml'
+          retention-days: 7
+
+      - name: Run SonarQube analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          # Uncomment the next line when using SonarCloud instead of a self-hosted SonarQube server
+          # SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+        run: ./gradlew sonar --no-daemon
+
+  # ═══════════════════════════════════════════════════════
+  # 3 · SNYK – Security & Dependency Vulnerability Scan
+  #
+  # Prerequisites:
+  #   • SNYK_TOKEN stored as a GitHub secret
+  #     (create a free account at https://snyk.io and generate a token)
+  # ═══════════════════════════════════════════════════════
+  snyk-scan:
+    name: Snyk – Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Install Snyk CLI
+        uses: snyk/actions/setup@master
+
+      - name: Run Snyk vulnerability test
+        # continue-on-error keeps the workflow green while you triage findings;
+        # results are surfaced in the GitHub Security tab via the SARIF upload below.
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          snyk test \
+            --all-sub-projects \
+            --severity-threshold=high \
+            --sarif-file-output=snyk.sarif
+
+      - name: Upload Snyk results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+
+      # Registers this project's dependencies with Snyk for ongoing monitoring.
+      # Runs only on pushes to main so it doesn't spam Snyk with every PR branch.
+      - name: Monitor project with Snyk
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk monitor --all-sub-projects
+
+  # ═══════════════════════════════════════════════════════
+  # 4 · BUILD JARS – Publish subproject artifacts
+  #
+  # Runs only after formatting and tests have passed.
+  # JARs are uploaded as workflow artifacts (available for 30 days).
+  # ═══════════════════════════════════════════════════════
+  build-jars:
+    name: Build Subproject JARs
+    needs:
+      - spotless-check
+      - build-and-analyze
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Build JARs for all subprojects
+        run: |
+          ./gradlew \
+            :metrics:jar \
+            :logging:jar \
+            :traces:jar \
+            :shared:jar \
+            :codegen:jar \
+            :testing:jar \
+            --no-daemon
+
+      - name: Upload JARs as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: koki-jars-${{ github.sha }}
+          path: '**/build/libs/*.jar'
+          if-no-files-found: error
+          retention-days: 30

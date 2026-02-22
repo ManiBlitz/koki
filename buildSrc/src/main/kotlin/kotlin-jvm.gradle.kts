@@ -7,11 +7,17 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin in JVM projects.
     kotlin("jvm")
+    // JaCoCo produces XML coverage reports consumed by SonarQube.
+    jacoco
 }
 
 kotlin {
     // Use a specific Java version to make it easier to work in different environments.
     jvmToolchain(21)
+}
+
+jacoco {
+    toolVersion = "0.8.12"
 }
 
 tasks.withType<Test>().configureEach {
@@ -25,5 +31,17 @@ tasks.withType<Test>().configureEach {
             TestLogEvent.PASSED,
             TestLogEvent.SKIPPED
         )
+    }
+
+    // Always generate the JaCoCo coverage report after tests complete.
+    finalizedBy(tasks.named("jacocoTestReport"))
+}
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.withType<Test>())
+    reports {
+        // XML is required by SonarQube; HTML is useful for local inspection.
+        xml.required.set(true)
+        html.required.set(true)
     }
 }
