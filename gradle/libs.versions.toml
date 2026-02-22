@@ -10,7 +10,7 @@ kotlinxCoroutines = "1.8.1"
 opentelemetry = "1.59.0"
 slf4j = "2.0.17"
 spotless = "8.2.1"
-sonarqube = "6.0.1.5171"
+sonarqube = "7.2.2.6593"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
