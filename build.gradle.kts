@@ -1,3 +1,6 @@
+import org.gradle.testing.jacoco.plugins.JacocoPluginExtension
+import org.gradle.testing.jacoco.tasks.JacocoReport
+
 plugins {
     alias(libs.plugins.spotless)
     alias(libs.plugins.sonarqube)
@@ -18,7 +21,24 @@ sonar {
 }
 
 subprojects {
+    apply(plugin = "jacoco")
     apply(plugin = "com.diffplug.spotless")
+
+    extensions.configure<JacocoPluginExtension> {
+        toolVersion = "0.8.12"
+    }
+
+    tasks.withType<Test>().configureEach {
+        finalizedBy(tasks.withType<JacocoReport>())
+    }
+
+    tasks.withType<JacocoReport>().configureEach {
+        dependsOn(tasks.withType<Test>())
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+        }
+    }
 
     configure<com.diffplug.gradle.spotless.SpotlessExtension> {
         kotlin {

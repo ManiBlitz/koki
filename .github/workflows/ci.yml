@@ -93,7 +93,7 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Build and run tests with JaCoCo coverage
-        run: ./gradlew build jacocoTestReport --no-daemon
+        run: ./gradlew build --no-daemon
 
       - name: Upload test results
         if: always()
