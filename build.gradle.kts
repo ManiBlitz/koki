@@ -8,7 +8,7 @@ plugins {
 
 sonar {
     properties {
-        property("sonar.projectKey", "koki")
+        property("sonar.projectKey", "Koki")
         property("sonar.projectName", "Koki")
         property("sonar.organization", System.getenv("SONAR_ORGANIZATION") ?: "")
         // Aggregate JaCoCo XML reports from every submodule for coverage analysis
