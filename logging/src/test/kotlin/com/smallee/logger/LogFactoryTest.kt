@@ -8,7 +8,7 @@ import kotlin.test.assertNotNull
 class LogFactoryTest {
 
   @Test
-  fun `create by name returns Logger with the given name`() {
+  fun `create by name returns KokiLogger with the given name`() {
     val logger = LogFactory.create("my-logger")
     assertEquals("my-logger", logger.getName())
   }
@@ -26,7 +26,7 @@ class LogFactoryTest {
   }
 
   @Test
-  fun `create by Class returns Logger named after the class`() {
+  fun `create by Class returns KokiLogger named after the class`() {
     val logger = LogFactory.create(String::class.java)
     assertNotNull(logger)
     assertEquals("java.lang.String", logger.getName())
@@ -45,7 +45,7 @@ class LogFactoryTest {
   }
 
   @Test
-  fun `create by reified type returns Logger named after the type`() {
+  fun `create by reified type returns KokiLogger named after the type`() {
     val logger = LogFactory.create<String>()
     assertNotNull(logger)
     assertEquals("java.lang.String", logger.getName())
@@ -68,8 +68,6 @@ class LogFactoryTest {
   fun `each call to create returns a distinct Logger instance`() {
     val first = LogFactory.create("logger-a")
     val second = LogFactory.create("logger-b")
-    assertNotNull(first)
-    assertNotNull(second)
     assertEquals("logger-a", first.getName())
     assertEquals("logger-b", second.getName())
   }

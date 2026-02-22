@@ -10,6 +10,8 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":shared"))
+    implementation(libs.opentelemetryApi)
     implementation(libs.slf4j)
 
     testImplementation(kotlin("test"))
