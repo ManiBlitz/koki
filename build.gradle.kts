@@ -10,6 +10,7 @@ sonar {
     properties {
         property("sonar.projectKey", "koki")
         property("sonar.projectName", "Koki")
+        property("sonar.organization", System.getenv("SONAR_ORGANIZATION") ?: "")
         // Aggregate JaCoCo XML reports from every submodule for coverage analysis
         property(
             "sonar.coverage.jacoco.xmlReportPaths",
