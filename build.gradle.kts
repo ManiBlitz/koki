@@ -1,8 +1,6 @@
 plugins {
-    id("com.diffplug.spotless") version "8.2.1"
-    // SonarQube/SonarCloud integration – run with: ./gradlew sonar
-    // Requires SONAR_TOKEN and SONAR_HOST_URL environment variables (or GitHub secrets).
-    id("org.sonarqube") version "6.0.1.5171"
+    alias(libs.plugins.spotless)
+    alias(libs.plugins.sonarqube)
 }
 
 sonar {
@@ -26,7 +24,7 @@ subprojects {
         kotlin {
             // Target all .kt files in the project, excluding those in the build directory
             target("**/*.kt")
-            targetExclude("$buildDir/**/*.kt")
+            targetExclude("${layout.buildDirectory.get().asFile}/**/*.kt")
 
             ktfmt().googleStyle()
 

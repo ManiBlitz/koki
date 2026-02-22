@@ -146,7 +146,7 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Install Snyk CLI
-        uses: snyk/actions/setup@master
+        uses: snyk/actions/setup@v1.0.0
 
       - name: Run Snyk vulnerability test
         # continue-on-error keeps the workflow green while you triage findings;
@@ -203,15 +203,7 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Build JARs for all subprojects
-        run: |
-          ./gradlew \
-            :metrics:jar \
-            :logging:jar \
-            :traces:jar \
-            :shared:jar \
-            :codegen:jar \
-            :testing:jar \
-            --no-daemon
+        run: ./gradlew jar --no-daemon
 
       - name: Upload JARs as workflow artifacts
         uses: actions/upload-artifact@v4
