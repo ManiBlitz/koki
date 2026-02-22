@@ -20,12 +20,14 @@ sonar {
     }
 }
 
+val jacocoVersion = libs.versions.jacoco.get()
+
 subprojects {
     apply(plugin = "jacoco")
     apply(plugin = "com.diffplug.spotless")
 
     extensions.configure<JacocoPluginExtension> {
-        toolVersion = "0.8.12"
+        toolVersion = jacocoVersion
     }
 
     tasks.withType<Test>().configureEach {
