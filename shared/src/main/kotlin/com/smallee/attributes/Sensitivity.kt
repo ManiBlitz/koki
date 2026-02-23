@@ -3,7 +3,7 @@ package com.smallee.attributes
 enum class Sensitivity {
   /** Defines attributes that have a high privacy level and should be fully redacted */
   HIGHLY_SENSITIVE {
-    override fun <T> obfuscate(value: T): String = "[REDACTED]"
+    override fun <T> obfuscate(value: T): String = ifObfuscating(value) { "[REDACTED]" }
   },
 
   /** Defines attributes that are sensitive and should be masked */
@@ -16,11 +16,13 @@ enum class Sensitivity {
       }
 
     override fun <T> obfuscate(value: T): String =
-      when (value) {
-        null -> "****"
-        is Boolean -> "****"
-        is List<*> -> value.joinToString(separator = ", ") { obfuscate(it) }
-        else -> maskString(value.toString())
+      ifObfuscating(value) {
+        when (value) {
+          null -> "****"
+          is Boolean -> "****"
+          is List<*> -> value.joinToString(separator = ", ") { obfuscate(it) }
+          else -> maskString(value.toString())
+        }
       }
   },
 
@@ -31,4 +33,13 @@ enum class Sensitivity {
 
   /** Provides an obfuscation value based on the provided string. */
   abstract fun <T> obfuscate(value: T): String
+
+  /**
+   * Qualifies the obfuscation of the value based if the obfuscation is enabled
+   *
+   * @param value the value to obfuscation
+   * @param obfuscated the obfuscation strategy to apply for the value provided
+   */
+  protected fun <T> ifObfuscating(value: T, obfuscated: () -> String): String =
+    if (AttributeDefinition.isObfuscationEnabled) obfuscated() else value.toString()
 }

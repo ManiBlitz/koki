@@ -1,5 +1,6 @@
 package com.smallee.attributes
 
+import com.smallee.Constants.OBFUSCATION_ENABLED
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.AttributeType
 import java.util.concurrent.ConcurrentHashMap
@@ -30,6 +31,14 @@ private constructor(
      * permanent schema — once registered, an entry is never evicted.
      */
     private val instances: ConcurrentHashMap<String, AttributeDefinition<*>> = ConcurrentHashMap()
+
+    /**
+     * Determines if obfuscation is enabled. Reads the `OBFUSCATION_ENABLED` environment variable
+     * and parses it strictly ("true"/"false"). Defaults to `true` when the variable is absent or
+     * contains an unrecognised value (secure-by-default).
+     */
+    val isObfuscationEnabled: Boolean =
+      System.getenv(OBFUSCATION_ENABLED)?.toBooleanStrictOrNull() ?: true
 
     /**
      * Registers [factory] under [name] if absent and returns the stored instance. The cast is safe
