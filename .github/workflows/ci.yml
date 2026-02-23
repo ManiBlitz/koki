@@ -11,14 +11,6 @@ on:
     branches:
       - main
 
-# ─────────────────────────────────────────────────────────
-# Permissions
-# security-events: write  → upload Snyk SARIF to Security tab
-# ─────────────────────────────────────────────────────────
-permissions:
-  contents: read
-  security-events: write
-
 # Cancel in-flight runs of the same workflow/branch to save minutes
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -39,6 +31,8 @@ jobs:
   spotless-check:
     name: Spotless – Format Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -71,6 +65,8 @@ jobs:
   build-and-analyze:
     name: Build, Test & SonarQube
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -132,6 +128,9 @@ jobs:
   snyk-scan:
     name: Snyk – Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
       - name: Checkout code
@@ -189,6 +188,8 @@ jobs:
       - spotless-check
       - build-and-analyze
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
