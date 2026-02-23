@@ -2,5 +2,5 @@ package com.smallee
 
 object Constants {
 
-  val OBFUSCATION_ENABLED = "OBFUSCATION_ENABLED"
+  const val OBFUSCATION_ENABLED = "OBFUSCATION_ENABLED"
 }

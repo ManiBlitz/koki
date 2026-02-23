@@ -33,10 +33,12 @@ private constructor(
     private val instances: ConcurrentHashMap<String, AttributeDefinition<*>> = ConcurrentHashMap()
 
     /**
-     * Determines of the obfuscation is enabled or not. Is based on the environment variable
-     * `OBFUSCATION_ENABLED`.
+     * Determines if obfuscation is enabled. Reads the `OBFUSCATION_ENABLED` environment variable
+     * and parses it strictly ("true"/"false"). Defaults to `true` when the variable is absent or
+     * contains an unrecognised value (secure-by-default).
      */
-    val isObfuscationEnabled: Boolean = System.getenv(OBFUSCATION_ENABLED).toBoolean()
+    val isObfuscationEnabled: Boolean =
+      System.getenv(OBFUSCATION_ENABLED)?.toBooleanStrictOrNull() ?: true
 
     /**
      * Registers [factory] under [name] if absent and returns the stored instance. The cast is safe
