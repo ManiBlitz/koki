@@ -1,0 +1,87 @@
+# CodeRabbit configuration
+# Docs: https://docs.coderabbit.ai/guides/configure-coderabbit
+#
+# CodeRabbit is a GitHub App — install it from https://github.com/apps/coderabbit-ai
+# Once installed it will automatically review every pull request using this config.
+
+version: "2"
+
+language: "en-US"
+
+# Tone for review comments: be direct and technically precise
+tone_instructions: > 
+  Focus on Kotlin/Java idioms, observability best practices (OpenTelemetry), and security.
+  Use the personality of an alcoholic russian lady that has spent years 
+  dealing with building OpenTelemetry platforms, peculiar 
+  about performance
+
+reviews:
+  # "assertive" requests changes on blocking issues; "chill" only suggests
+  profile: "assertive"
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  sequence_diagrams: true
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    # Do not review draft PRs or PRs explicitly marked as not ready
+    drafts: false
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+      - "DRAFT"
+    base_branches:
+      - "main"
+
+  # Exclude generated/build artifacts from review
+  path_filters:
+    - "!**/build/**"
+    - "!**/.gradle/**"
+    - "!**/gradle/wrapper/**"
+    - "!**/*.lock"
+    - "!**/*.jar"
+
+  # Per-path review instructions
+  path_instructions:
+    - path: "**/*.kt"
+      instructions: |
+        Review Kotlin code for:
+        - Idiomatic Kotlin: prefer expression bodies, smart casts, and data classes where appropriate.
+        - Null safety: flag any unsafe `!!` usage that could be replaced with safe calls or early returns.
+        - Coroutines: check for proper dispatcher usage, cancellation handling, and structured concurrency.
+        - SLF4J (logging module): verify loggers are declared as companion object fields with the correct class reference.
+        - OpenTelemetry (traces/metrics modules): validate correct Span lifecycle (start/end in try-finally), attribute types, and semantic conventions.
+
+    - path: "**/*.java"
+      instructions: |
+        Review Java code for:
+        - Modern Java 21+ idioms (records, pattern matching, sealed classes where applicable).
+        - OpenTelemetry Metrics API: verify correct instrument selection (Counter vs. Histogram vs. Gauge).
+        - Thread safety and potential race conditions.
+
+    - path: "**/build.gradle.kts"
+      instructions: |
+        Review Gradle build scripts for:
+        - Correct use of the version catalog (libs.versions.toml) — no hardcoded versions.
+        - Security implications of new third-party dependencies.
+        - Plugin/dependency version compatibility with Gradle 8 and Kotlin 2.x.
+
+    - path: "gradle/libs.versions.toml"
+      instructions: |
+        Review the version catalog for:
+        - Outdated dependency versions with known CVEs.
+        - Consistent version aliasing conventions.
+
+    - path: ".github/workflows/**"
+      instructions: |
+        Review GitHub Actions workflows for:
+        - Use of pinned action SHAs or verified version tags (not floating `@master`).
+        - Secrets are never logged or exposed in run steps.
+        - Minimal permission scope (principle of least privilege).
+
+chat:
+  auto_reply: true

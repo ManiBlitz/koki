@@ -9,6 +9,9 @@ kotlinxSerializationJSON = "1.7.2"
 kotlinxCoroutines = "1.8.1"
 opentelemetry = "1.59.0"
 slf4j = "2.0.17"
+spotless = "8.2.1"
+sonarqube = "7.2.2.6593"
+jacoco = "0.8.12"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -24,3 +27,5 @@ kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutine
 
 [plugins]
 kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
