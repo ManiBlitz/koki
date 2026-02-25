@@ -170,4 +170,21 @@ private constructor(
   override fun getType(): AttributeType = attributeType
 
   fun getSensitivity(): Sensitivity = sensitivity
+
+  /**
+   * Creates an [AttributeEntry] pairing this definition with the given value.
+   *
+   * Allows a definition to be used directly as a function, removing the need to construct
+   * [AttributeEntry] explicitly:
+   * ```
+   * // before
+   * AttributeEntry(httpMethod, "GET")
+   * // after
+   * httpMethod("GET")
+   * ```
+   *
+   * @param value the value to pair with this definition
+   * @see AttributeEntry
+   */
+  operator fun invoke(value: T): AttributeEntry<T> = AttributeEntry(this, value)
 }
