@@ -186,5 +186,5 @@ private constructor(
    * @param value the value to pair with this definition
    * @see AttributeEntry
    */
-  operator fun invoke(value: T): AttributeEntry<T> = AttributeEntry(this, value)
+  operator fun invoke(value: T?): AttributeEntry<T> = AttributeEntry(this, value)
 }

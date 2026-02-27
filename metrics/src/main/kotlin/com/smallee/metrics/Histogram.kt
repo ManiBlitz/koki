@@ -1,8 +1,6 @@
 package com.smallee.metrics
 
 import com.smallee.attributes.AttributeEntry
-import io.opentelemetry.api.common.AttributeKey
-import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.DoubleHistogram
 
 /**
@@ -23,17 +21,9 @@ class Histogram(
   override fun getName(): String = name
 
   override fun record(value: Double, vararg attributes: AttributeEntry<*>) {
-    delegate.record(value, buildAttributes(baseTags + attributes))
-  }
-
-  private fun buildAttributes(entries: List<AttributeEntry<*>>): Attributes {
-    val builder = Attributes.builder()
-    entries.forEach { entry ->
-      if (entry.value != null) {
-        @Suppress("UNCHECKED_CAST")
-        builder.put(entry.definition as AttributeKey<Any>, entry.value as Any)
-      }
+    require(value >= 0) {
+      "Histogram '$name' received negative value $value; OpenTelemetry histograms only accept non-negative values"
     }
-    return builder.build()
+    delegate.record(value, MetricAttributes.build(baseTags + attributes))
   }
 }

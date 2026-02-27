@@ -37,21 +37,21 @@ class GaugeTest {
   @Test
   fun `record forwards a String attribute value to the delegate`() {
     val gauge = Gauge("memory.usage", delegate)
-    gauge.record(512.0, AttributeEntry(pool, "heap"))
+    gauge.record(512.0, pool("heap"))
     verify { delegate.set(512.0, match { attrs -> attrs.get(pool) == "heap" }) }
   }
 
   @Test
   fun `record forwards a Boolean attribute value to the delegate`() {
     val gauge = Gauge("memory.usage", delegate)
-    gauge.record(128.0, AttributeEntry(active, true))
+    gauge.record(128.0, active(true))
     verify { delegate.set(128.0, match { attrs -> attrs.get(active) == true }) }
   }
 
   @Test
   fun `record forwards multiple attribute values to the delegate`() {
     val gauge = Gauge("memory.usage", delegate)
-    gauge.record(256.0, AttributeEntry(pool, "metaspace"), AttributeEntry(active, false))
+    gauge.record(256.0, pool("metaspace"), active(false))
     verify {
       delegate.set(
         256.0,
@@ -62,8 +62,8 @@ class GaugeTest {
 
   @Test
   fun `record merges baseTags with per-call attributes`() {
-    val gauge = Gauge("memory.usage", delegate, listOf(AttributeEntry(region, "us-west-2")))
-    gauge.record(2048.0, AttributeEntry(pool, "non-heap"))
+    val gauge = Gauge("memory.usage", delegate, listOf(region("us-west-2")))
+    gauge.record(2048.0, pool("non-heap"))
     verify {
       delegate.set(
         2048.0,
@@ -74,7 +74,7 @@ class GaugeTest {
 
   @Test
   fun `record with only baseTags and no per-call attributes includes the baseTags`() {
-    val gauge = Gauge("memory.usage", delegate, listOf(AttributeEntry(region, "eu-central-1")))
+    val gauge = Gauge("memory.usage", delegate, listOf(region("eu-central-1")))
     gauge.record(64.0)
     verify { delegate.set(64.0, match { attrs -> attrs.get(region) == "eu-central-1" }) }
   }

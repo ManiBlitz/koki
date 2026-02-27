@@ -178,7 +178,8 @@ class MetricBuilderTest {
     val (builder, result) = capturingBuilder()
     builder.addTag(tagA, "before").build()
     val tagsAtBuildTime = result().baseTags
-    // subsequent addTag on the same builder should not affect the already-captured snapshot
+    // mutate the builder after build — the already-captured snapshot must not change
+    builder.addTag(tagA, "after")
     assertEquals(1, tagsAtBuildTime.size)
     assertEquals("before", tagsAtBuildTime[0].value)
   }

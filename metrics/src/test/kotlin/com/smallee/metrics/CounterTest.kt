@@ -8,6 +8,7 @@ import io.mockk.verify
 import io.opentelemetry.api.metrics.LongCounter
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class CounterTest {
 
@@ -93,6 +94,12 @@ class CounterTest {
     val counter = Counter("requests", delegate)
     counter.add(1L, AttributeEntry(httpMethod, null))
     verify { delegate.add(1L, match { attrs -> attrs.get(httpMethod) == null }) }
+  }
+
+  @Test
+  fun `add throws IllegalArgumentException for a negative value`() {
+    val counter = Counter("requests", delegate)
+    assertFailsWith<IllegalArgumentException> { counter.add(-1L) }
   }
 
   // ── increment ──────────────────────────────────────────────────────────────

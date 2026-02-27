@@ -8,6 +8,7 @@ import io.mockk.verify
 import io.opentelemetry.api.metrics.DoubleHistogram
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class HistogramTest {
 
@@ -90,6 +91,12 @@ class HistogramTest {
     val histogram = Histogram("http.duration", delegate)
     histogram.record(1.0)
     verify { delegate.record(1.0, match { attrs -> attrs.isEmpty }) }
+  }
+
+  @Test
+  fun `record throws IllegalArgumentException for a negative value`() {
+    val histogram = Histogram("http.duration", delegate)
+    assertFailsWith<IllegalArgumentException> { histogram.record(-1.0) }
   }
 
   @Test

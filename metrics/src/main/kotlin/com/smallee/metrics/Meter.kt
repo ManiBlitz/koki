@@ -12,38 +12,25 @@ import io.opentelemetry.api.GlobalOpenTelemetry
  */
 class Meter(private val scope: String) : KokiMeter {
 
+  private val meter = GlobalOpenTelemetry.getMeter(scope)
+
   override fun getName(): String = scope
 
   override fun counterBuilder(name: String): CounterBuilder =
     MetricBuilder { description, unit, baseTags ->
-      val delegate =
-        GlobalOpenTelemetry.getMeter(scope)
-          .counterBuilder(name)
-          .setDescription(description)
-          .setUnit(unit)
-          .build()
+      val delegate = meter.counterBuilder(name).setDescription(description).setUnit(unit).build()
       Counter(name, delegate, baseTags)
     }
 
   override fun gaugeBuilder(name: String): GaugeBuilder =
     MetricBuilder { description, unit, baseTags ->
-      val delegate =
-        GlobalOpenTelemetry.getMeter(scope)
-          .gaugeBuilder(name)
-          .setDescription(description)
-          .setUnit(unit)
-          .build()
+      val delegate = meter.gaugeBuilder(name).setDescription(description).setUnit(unit).build()
       Gauge(name, delegate, baseTags)
     }
 
   override fun histogramBuilder(name: String): HistogramBuilder =
     MetricBuilder { description, unit, baseTags ->
-      val delegate =
-        GlobalOpenTelemetry.getMeter(scope)
-          .histogramBuilder(name)
-          .setDescription(description)
-          .setUnit(unit)
-          .build()
+      val delegate = meter.histogramBuilder(name).setDescription(description).setUnit(unit).build()
       Histogram(name, delegate, baseTags)
     }
 }

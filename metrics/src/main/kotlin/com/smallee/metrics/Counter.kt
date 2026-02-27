@@ -1,8 +1,6 @@
 package com.smallee.metrics
 
 import com.smallee.attributes.AttributeEntry
-import io.opentelemetry.api.common.AttributeKey
-import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.LongCounter
 
 /**
@@ -23,17 +21,9 @@ class Counter(
   override fun getName(): String = name
 
   override fun add(value: Long, vararg attributes: AttributeEntry<*>) {
-    delegate.add(value, buildAttributes(baseTags + attributes))
-  }
-
-  private fun buildAttributes(entries: List<AttributeEntry<*>>): Attributes {
-    val builder = Attributes.builder()
-    entries.forEach { entry ->
-      if (entry.value != null) {
-        @Suppress("UNCHECKED_CAST")
-        builder.put(entry.definition as AttributeKey<Any>, entry.value as Any)
-      }
+    require(value >= 0) {
+      "Counter '$name' received negative value $value; OpenTelemetry counters are monotonically increasing and only accept non-negative values"
     }
-    return builder.build()
+    delegate.add(value, MetricAttributes.build(baseTags + attributes))
   }
 }
