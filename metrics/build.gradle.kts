@@ -1,5 +1,5 @@
 plugins {
-    id("java")
+    kotlin("jvm")
 }
 
 group = "com.smallee"
@@ -10,10 +10,17 @@ repositories {
 }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    implementation(project(":shared"))
+    implementation(libs.opentelemetryApi)
+
+    testImplementation(kotlin("test"))
+    testImplementation(libs.mockk)
 }
 
 tasks.test {
     useJUnitPlatform()
+}
+
+kotlin {
+    jvmToolchain(21)
 }
