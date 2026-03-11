@@ -206,6 +206,122 @@ class SensitiveElementTest {
   }
 
   @Test
+  fun `CVV detect matches cvv label`() {
+    assertEquals(1, SensitiveElement.CARD_VERIFICATION_VALUE.detect("cvv=123").size)
+  }
+
+  @Test
+  fun `CVV detect matches cvc2 label`() {
+    assertEquals(1, SensitiveElement.CARD_VERIFICATION_VALUE.detect("cvc2: 456").size)
+  }
+
+  @Test
+  fun `CVV detect matches cid label`() {
+    assertEquals(1, SensitiveElement.CARD_VERIFICATION_VALUE.detect("cid=1234").size)
+  }
+
+  @Test
+  fun `CVV detect matches security_code label`() {
+    assertEquals(1, SensitiveElement.CARD_VERIFICATION_VALUE.detect("security_code=321").size)
+  }
+
+  @Test
+  fun `CVV detect matches securityCode camelCase label`() {
+    assertEquals(1, SensitiveElement.CARD_VERIFICATION_VALUE.detect("securityCode: 789").size)
+  }
+
+  @Test
+  fun `CVV detect matches card_security_code label`() {
+    assertEquals(1, SensitiveElement.CARD_VERIFICATION_VALUE.detect("card_security_code=555").size)
+  }
+
+  @Test
+  fun `CVV detect matches cardSecurityCode camelCase label`() {
+    assertEquals(1, SensitiveElement.CARD_VERIFICATION_VALUE.detect("cardSecurityCode=999").size)
+  }
+
+  @Test
+  fun `CVV detect matches cvv_code label`() {
+    assertEquals(1, SensitiveElement.CARD_VERIFICATION_VALUE.detect("cvv_code=123").size)
+  }
+
+  @Test
+  fun `CVV detect matches cvvCode camelCase label`() {
+    assertEquals(1, SensitiveElement.CARD_VERIFICATION_VALUE.detect("cvvCode: 456").size)
+  }
+
+  @Test
+  fun `CVV detect is case-insensitive`() {
+    assertEquals(1, SensitiveElement.CARD_VERIFICATION_VALUE.detect("CVV=123").size)
+    assertEquals(1, SensitiveElement.CARD_VERIFICATION_VALUE.detect("Security_Code=321").size)
+  }
+
+  @Test
+  fun `CVV detect does not match a bare 3-digit number without a label`() {
+    assertTrue(SensitiveElement.CARD_VERIFICATION_VALUE.detect("amount is 123").isEmpty())
+  }
+
+  // ── PRIVATE_KEY detection covers the full PEM block ────────────────────────
+
+  @Test
+  fun `private key detect matches the full PEM block including body and END footer`() {
+    val pem =
+      """
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEowIBAAKCAQEA0Z3VS5JJcds3xHn/ygWep4/sBXMZPiQABFEZdSPqSBzHKTeN
+      aqHyLRfVSMqCsq3UJKTYM+tN5qlqiNbZ9v7mjHnOVvGrHgSIbKK5ljKGbXDpFDYH
+      -----END RSA PRIVATE KEY-----
+      """
+        .trimIndent()
+    val matches = SensitiveElement.PRIVATE_KEY.detect(pem)
+    assertEquals(1, matches.size)
+  }
+
+  @Test
+  fun `private key detect match value includes the body and END footer not just the header`() {
+    val pem =
+      """
+      -----BEGIN EC PRIVATE KEY-----
+      MHQCAQEEIOk3NHMK7lsE9BNgCivCVg9RdMEpuHETOBj+sGlQGgZ9oAoGCCqGSM49
+      AwEHoWQDYgAE
+      -----END EC PRIVATE KEY-----
+      """
+        .trimIndent()
+    val match = SensitiveElement.PRIVATE_KEY.detect(pem).first().value
+    assertTrue(match.contains("-----END EC PRIVATE KEY-----"), "Match must include the END footer")
+    assertTrue(match.contains("MHQCAQEEIOk3"), "Match must include the base64 body")
+  }
+
+  @Test
+  fun `private key detect handles an untyped PRIVATE KEY block`() {
+    val pem = "-----BEGIN PRIVATE KEY-----\nMIIEvQ==\n-----END PRIVATE KEY-----"
+    assertEquals(1, SensitiveElement.PRIVATE_KEY.detect(pem).size)
+  }
+
+  @Test
+  fun `private key maskInText redacts the entire PEM block leaving surrounding text intact`() {
+    val input = "key: -----BEGIN RSA PRIVATE KEY-----\nABCD==\n-----END RSA PRIVATE KEY-----\nend"
+    val result = SensitiveElement.PRIVATE_KEY.maskInText(input)
+    assertEquals("key: [REDACTED]\nend", result)
+  }
+
+  @Test
+  fun `private key detect finds two separate PEM blocks independently`() {
+    val input =
+      """
+      -----BEGIN RSA PRIVATE KEY-----
+      AAAA==
+      -----END RSA PRIVATE KEY-----
+      some text
+      -----BEGIN EC PRIVATE KEY-----
+      BBBB==
+      -----END EC PRIVATE KEY-----
+      """
+        .trimIndent()
+    assertEquals(2, SensitiveElement.PRIVATE_KEY.detect(input).size)
+  }
+
+  @Test
   fun `card expiration date detect finds MM-YY format`() {
     val matches = SensitiveElement.CARD_EXPIRATION_DATE.detect("exp: 12/25")
     assertEquals(1, matches.size)
@@ -222,6 +338,43 @@ class SensitiveElementTest {
     val matches = SensitiveElement.DIAGNOSIS_CODE.detect("diagnosis: E11.9")
     assertEquals(1, matches.size)
     assertEquals("E11.9", matches.first().value)
+  }
+
+  // ── DATE_OF_SERVICE vs DATE_OF_BIRTH disambiguation ───────────────────────
+
+  @Test
+  fun `date of service detect matches when a known label precedes the date`() {
+    assertEquals(1, SensitiveElement.DATE_OF_SERVICE.detect("service_date: 2026-03-11").size)
+    assertEquals(1, SensitiveElement.DATE_OF_SERVICE.detect("dateOfService=2024-07-04").size)
+    assertEquals(1, SensitiveElement.DATE_OF_SERVICE.detect("dos: 01/15/2025").size)
+    assertEquals(1, SensitiveElement.DATE_OF_SERVICE.detect("encounter_date=2023-12-01").size)
+  }
+
+  @Test
+  fun `date of service detect does not match a bare date without a label`() {
+    assertTrue(SensitiveElement.DATE_OF_SERVICE.detect("2026-03-11").isEmpty())
+    assertTrue(SensitiveElement.DATE_OF_SERVICE.detect("admitted on 2026-03-11").isEmpty())
+  }
+
+  @Test
+  fun `date of birth detect still matches a bare unlabeled date`() {
+    assertEquals(1, SensitiveElement.DATE_OF_BIRTH.detect("1990-06-15").size)
+    assertEquals(1, SensitiveElement.DATE_OF_BIRTH.detect("patient born 15/06/1990").size)
+  }
+
+  @Test
+  fun `a bare date matches DATE_OF_BIRTH but not DATE_OF_SERVICE via scanText`() {
+    val results = SensitiveElement.scanText("dob: 1985-04-23")
+    assertTrue(SensitiveElement.DATE_OF_BIRTH in results)
+    assertTrue(SensitiveElement.DATE_OF_SERVICE !in results)
+  }
+
+  @Test
+  fun `a labeled service date matches DATE_OF_SERVICE via scanText`() {
+    // The date portion will also trigger DATE_OF_BIRTH's generic pattern — that is expected.
+    // The key guarantee is that DATE_OF_SERVICE fires when its label is present.
+    val results = SensitiveElement.scanText("service_date: 2026-03-11")
+    assertTrue(SensitiveElement.DATE_OF_SERVICE in results)
   }
 
   @Test
@@ -292,6 +445,22 @@ class SensitiveElementTest {
   @Test
   fun `POSTAL_ADDRESS maskValue returns the custom masking replacement without a detection pattern`() {
     assertEquals("[ADDRESS REDACTED]", SensitiveElement.POSTAL_ADDRESS.maskValue("123 Main St"))
+  }
+
+  @Test
+  fun `maskValue returns maskingReplacement when detectionPattern is non-null but finds no match`() {
+    // EMAIL_ADDRESS has a detectionPattern; "not-an-email" does not match it.
+    // The original value must not be returned — maskingReplacement must come back instead.
+    val element = SensitiveElement.EMAIL_ADDRESS
+    assertEquals(element.maskingReplacement, element.maskValue("not-an-email"))
+  }
+
+  @Test
+  fun `maskValue does not leak the original value when the pattern does not match`() {
+    // SSN pattern requires exactly 9 digits in the right grouping; a random number must not pass
+    // through
+    val result = SensitiveElement.SOCIAL_SECURITY_NUMBER.maskValue("12345")
+    assertEquals("[REDACTED]", result)
   }
 
   // ── maskInText ─────────────────────────────────────────────────────────────

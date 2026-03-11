@@ -53,13 +53,15 @@ enum class SensitivityDomain(
   /**
    * **Health Insurance Portability and Accountability Act** — US federal law (1996) establishing
    * national standards for the protection of individually identifiable health information
-   * (Protected Health Information, PHI). Penalties range from \$100 to \$50,000 per violation.
+   * (Protected Health Information, PHI). Civil and criminal penalties apply and are subject to
+   * regulatory adjustment over time.
    */
   HIPAA(
     fullName = "Health Insurance Portability and Accountability Act",
     abbreviation = "HIPAA",
     description =
       "US federal law establishing national standards for the protection of individually " +
-        "identifiable health information (PHI). Penalties up to \$50,000 per violation.",
+        "identifiable health information (PHI). Civil and criminal penalties apply and are " +
+        "subject to regulatory adjustment over time.",
   ),
 }

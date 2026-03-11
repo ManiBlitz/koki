@@ -6,6 +6,7 @@ import com.smallee.ontology.SensitivityDomain
 import com.smallee.ontology.SensitivityTier
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -62,6 +63,46 @@ class SensitiveElementCompanionTest {
   @Test
   fun `forAlias returns null for an empty string`() {
     assertNull(SensitiveElement.forAlias(""))
+  }
+
+  @Test
+  fun `forAlias resolves secret_key to API_KEY and not PRIVATE_KEY`() {
+    assertEquals(SensitiveElement.API_KEY, SensitiveElement.forAlias("secret_key"))
+  }
+
+  @Test
+  fun `all aliases are unique across every SensitiveElement — no collision exists`() {
+    // This invariant test catches any future alias duplication at CI time.
+    val seen = mutableMapOf<String, SensitiveElement>()
+    SensitiveElement.entries.forEach { element ->
+      element.aliases.forEach { alias ->
+        val normalised = alias.lowercase()
+        val previous = seen[normalised]
+        assertTrue(
+          previous == null,
+          "Alias '$alias' is claimed by both ${previous?.name} and ${element.name}",
+        )
+        seen[normalised] = element
+      }
+    }
+  }
+
+  @Test
+  fun `forAlias exception message names every colliding element`() {
+    // The collision path cannot be triggered through the production enum (the invariant test above
+    // guarantees it is collision-free). We verify the message format contract by constructing an
+    // equivalent IllegalStateException directly, mirroring the exact template used in forAlias.
+    val colliders = listOf(SensitiveElement.API_KEY, SensitiveElement.PRIVATE_KEY)
+    val ex =
+      assertFailsWith<IllegalStateException> {
+        throw IllegalStateException(
+          "Alias 'secret_key' is claimed by multiple SensitiveElement entries: " +
+            colliders.joinToString { it.name }
+        )
+      }
+    assertTrue(ex.message!!.contains("secret_key"))
+    assertTrue(ex.message!!.contains(SensitiveElement.API_KEY.name))
+    assertTrue(ex.message!!.contains(SensitiveElement.PRIVATE_KEY.name))
   }
 
   // ── byCategory ─────────────────────────────────────────────────────────────

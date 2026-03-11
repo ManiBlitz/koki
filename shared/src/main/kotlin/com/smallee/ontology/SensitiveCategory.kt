@@ -16,12 +16,17 @@ enum class SensitiveCategory(val displayName: String, val description: String) {
         "(e.g. SSN, passport, driver's licence, national ID, tax ID).",
   ),
 
-  /** Payment instruments, account numbers, and financial data subject to PCI-DSS controls. */
+  /**
+   * Payment instruments and bank-account identifiers. Payment card data (PAN, CVV, expiry) is
+   * subject to PCI-DSS. Bank-account identifiers (IBAN, routing numbers) are governed by financial
+   * privacy regulations but are not in PCI-DSS scope unless accompanied by a PAN.
+   */
   FINANCIAL(
     displayName = "Financial",
     description =
-      "Payment instruments, bank account numbers, and financial identifiers subject to " +
-        "PCI-DSS and financial privacy regulations (e.g. credit card, IBAN, routing number).",
+      "Payment instruments and bank-account identifiers. Payment card data (PAN, CVV, expiry) " +
+        "falls under PCI-DSS. Bank-account identifiers (IBAN, routing numbers) are governed by " +
+        "financial privacy regulations, not PCI-DSS, unless co-located with a PAN.",
   ),
 
   /**

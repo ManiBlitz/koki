@@ -246,7 +246,11 @@ enum class SensitiveElement(
     category = SensitiveCategory.FINANCIAL,
     domains = setOf(SensitivityDomain.PCI_DSS),
     tier = SensitivityTier.TIER_0,
-    detectionPattern = Regex("""(?i)\bcv[cv]2?\s*[:=]\s*(\d{3,4})\b"""),
+    // Alternation ordered most-specific first to avoid partial label shadowing
+    detectionPattern =
+      Regex(
+        """(?i)\b(?:card[_\s]?security[_\s]?code|cvv[_\s]?code|security[_\s]?code|cv[cv]2?|cid)\s*[:=]\s*(\d{3,4})\b"""
+      ),
   ),
 
   /**
@@ -413,7 +417,8 @@ enum class SensitiveElement(
 
   /**
    * **Private Cryptographic Key** — PEM-encoded private keys (RSA, EC, DSA, OpenSSH). The detection
-   * pattern matches the PEM header, which is sufficient to identify the block.
+   * pattern matches the full PEM block — BEGIN header, base64 body, and END footer — using
+   * DOT_MATCHES_ALL (`(?s)`) so that `maskInText` redacts the entire key, not just the header line.
    */
   PRIVATE_KEY(
     displayName = "Private Cryptographic Key",
@@ -428,14 +433,18 @@ enum class SensitiveElement(
         "pemKey",
         "signing_key",
         "signingKey",
-        "secret_key",
         "tls_key",
         "tlsKey",
       ),
     category = SensitiveCategory.CREDENTIALS,
     domains = setOf(SensitivityDomain.PII),
     tier = SensitivityTier.TIER_0,
-    detectionPattern = Regex("""-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"""),
+    // (?s) enables DOT_MATCHES_ALL so '.' spans newlines across the base64 body.
+    // Lazy .+? stops at the first matching END marker, handling multiple keys in one string.
+    detectionPattern =
+      Regex(
+        """(?s)-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----.+?-----END (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"""
+      ),
   ),
 
   /**
@@ -523,7 +532,6 @@ enum class SensitiveElement(
         "email_address",
         "emailAddress",
         "e_mail",
-        "eMail",
         "mail",
         "contact_email",
         "contactEmail",
@@ -843,8 +851,12 @@ enum class SensitiveElement(
 
   /**
    * **Date of Service** — the date on which a medical procedure, visit, or treatment occurred.
-   * HIPAA §164.514(b) identifies dates (other than year) as PHI. Both ISO 8601 and common locale
-   * formats are detected.
+   * HIPAA §164.514(b) identifies dates (other than year) as PHI.
+   *
+   * The detection pattern is **label-bound**: it only matches when one of the known field-name
+   * tokens (e.g. `service_date`, `dateOfService`, `dos`) immediately precedes the date value. This
+   * avoids false-positive overlap with [DATE_OF_BIRTH], which uses a generic free-form date
+   * pattern. A bare date string like `2026-03-11` will therefore only match [DATE_OF_BIRTH].
    */
   DATE_OF_SERVICE(
     displayName = "Date of Service",
@@ -867,9 +879,12 @@ enum class SensitiveElement(
     category = SensitiveCategory.HEALTH,
     domains = setOf(SensitivityDomain.HIPAA),
     tier = SensitivityTier.TIER_2,
-    // ISO 8601 (YYYY-MM-DD) and locale-common (MM/DD/YYYY or DD/MM/YYYY)
+    // Label-bound: requires a recognised service-date field name before the date value.
+    // Covers snake_case and camelCase aliases; ISO 8601 and locale date formats accepted.
     detectionPattern =
-      Regex("""\b\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}\b|\b\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\b"""),
+      Regex(
+        """(?i)(?:date_of_service|dateOfService|service_date|serviceDate|treatment_date|treatmentDate|appointment_date|appointmentDate|visit_date|visitDate|encounter_date|encounterDate|dos)\s*[:=]\s*(?:\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4})"""
+      ),
     maskingReplacement = "[DATE REDACTED]",
   ),
 
@@ -894,7 +909,6 @@ enum class SensitiveElement(
         "birthDate",
         "birthday",
         "birth_day",
-        "birthDay",
         "born_on",
         "bornOn",
         "date_of_birth_year",
@@ -1123,8 +1137,6 @@ enum class SensitiveElement(
       listOf(
         "session_id",
         "sessionId",
-        "session_token",
-        "sessionToken",
         "sid",
         "jsessionid",
         "PHPSESSID",
@@ -1228,7 +1240,6 @@ enum class SensitiveElement(
         "postalCode",
         "postcode",
         "post_code",
-        "postCode",
         "pin_code",
         "pinCode",
         "area_code",
@@ -1262,7 +1273,6 @@ enum class SensitiveElement(
         "live_location",
         "liveLocation",
         "geo_location",
-        "geoLocation",
         "geolocation",
         "user_location",
         "userLocation",
@@ -1293,12 +1303,18 @@ enum class SensitiveElement(
   fun maskInText(text: String): String = detectionPattern?.replace(text, maskingReplacement) ?: text
 
   /**
-   * Masks [value] as a standalone known-sensitive string. When [detectionPattern] is present, it
-   * replaces detected sub-sequences; otherwise the entire [value] is replaced with
-   * [maskingReplacement].
+   * Masks [value] as a standalone known-sensitive string.
+   * - When [detectionPattern] is `null` (alias-only element): returns [maskingReplacement].
+   * - When [detectionPattern] matches in [value]: replaces all matches with [maskingReplacement].
+   * - When [detectionPattern] is non-null but finds no match (e.g. an unexpected format): still
+   *   returns [maskingReplacement] rather than leaking [value] as plaintext.
    */
   fun maskValue(value: String): String =
-    detectionPattern?.replace(value, maskingReplacement) ?: maskingReplacement
+    when {
+      detectionPattern == null -> maskingReplacement
+      detectionPattern.containsMatchIn(value) -> detectionPattern.replace(value, maskingReplacement)
+      else -> maskingReplacement
+    }
 
   /** Whether pattern-based in-text scanning is available for this element. */
   val isPatternDetectable: Boolean
@@ -1325,10 +1341,23 @@ enum class SensitiveElement(
      * Returns the [SensitiveElement] whose [aliases] list contains [alias] (case-insensitive), or
      * `null` if no element matches. Useful for resolving field names observed during capture to
      * their canonical [SensitiveElement].
+     *
+     * @throws IllegalStateException if more than one element claims the same alias, which indicates
+     *   a data-definition bug that must be fixed at compile time.
      */
     fun forAlias(alias: String): SensitiveElement? {
       val normalised = alias.lowercase()
-      return entries.firstOrNull { element -> element.aliases.any { it.lowercase() == normalised } }
+      val matches =
+        entries.filter { element -> element.aliases.any { it.lowercase() == normalised } }
+      return when (matches.size) {
+        0 -> null
+        1 -> matches.first()
+        else ->
+          throw IllegalStateException(
+            "Alias '$alias' is claimed by multiple SensitiveElement entries: " +
+              matches.joinToString { it.name }
+          )
+      }
     }
 
     /** Returns all [SensitiveElement] entries belonging to the given [category]. */
