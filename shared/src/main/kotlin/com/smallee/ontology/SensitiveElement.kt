@@ -97,7 +97,7 @@ enum class SensitiveElement(
     category = SensitiveCategory.IDENTITY_DOCUMENT,
     domains = setOf(SensitivityDomain.PII, SensitivityDomain.GDPR),
     tier = SensitivityTier.TIER_1,
-    detectionPattern = Regex("""\b[A-Z]{1,2}[0-9]{6,9}\b"""),
+    detectionPattern = Regex("""(?i)\b[A-Z]{1,2}[0-9]{6,9}\b"""),
   ),
 
   /**
@@ -378,8 +378,12 @@ enum class SensitiveElement(
     category = SensitiveCategory.CREDENTIALS,
     domains = setOf(SensitivityDomain.PII, SensitivityDomain.GDPR),
     tier = SensitivityTier.TIER_0,
+    // Quoted value (single or double quotes, may contain spaces) takes priority over the
+    // unquoted fallback (\S+) so that "my secret phrase" is captured in full.
     detectionPattern =
-      Regex("""(?i)(?:password|passwd|pwd|pass|passphrase|pin|passcode)\s*[:=]\s*\S+"""),
+      Regex(
+        """(?i)(?:password|passwd|pwd|pass|passphrase|pin|passcode)\s*[:=]\s*(?:"[^"]*"|'[^']*'|\S+)"""
+      ),
   ),
 
   /**
@@ -1327,15 +1331,22 @@ enum class SensitiveElement(
   companion object {
 
     /**
+     * The subset of [entries] for which [isPatternDetectable] is `true`, computed once at
+     * class-load time so [scanText] does not rebuild it on every invocation.
+     */
+    val patternDetectableEntries: List<SensitiveElement> = entries.filter { it.isPatternDetectable }
+
+    /**
      * Scans [text] for every [SensitiveElement] that has a [detectionPattern], returning only those
      * with at least one match. Useful for automated PII/PHI scanning of log lines or
      * request/response payloads.
      */
-    fun scanText(text: String): Map<SensitiveElement, List<MatchResult>> =
-      entries
-        .filter { it.isPatternDetectable }
-        .associateWith { it.detect(text) }
-        .filterValues { it.isNotEmpty() }
+    fun scanText(text: String): Map<SensitiveElement, List<MatchResult>> = buildMap {
+      for (element in patternDetectableEntries) {
+        val matches = element.detect(text)
+        if (matches.isNotEmpty()) put(element, matches)
+      }
+    }
 
     /**
      * Returns the [SensitiveElement] whose [aliases] list contains [alias] (case-insensitive), or

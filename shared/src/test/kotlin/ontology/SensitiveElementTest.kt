@@ -199,10 +199,62 @@ class SensitiveElementTest {
   }
 
   @Test
+  fun `passport detect finds an uppercase prefix`() {
+    assertEquals(1, SensitiveElement.PASSPORT_NUMBER.detect("passport: A12345678").size)
+  }
+
+  @Test
+  fun `passport detect finds a lowercase prefix`() {
+    assertEquals(1, SensitiveElement.PASSPORT_NUMBER.detect("passport: a12345678").size)
+  }
+
+  @Test
+  fun `passport detect finds a two-letter uppercase prefix`() {
+    assertEquals(1, SensitiveElement.PASSPORT_NUMBER.detect("travel doc AB1234567").size)
+  }
+
+  @Test
+  fun `passport detect finds a two-letter lowercase prefix`() {
+    assertEquals(1, SensitiveElement.PASSPORT_NUMBER.detect("travel doc ab1234567").size)
+  }
+
+  @Test
   fun `IBAN detect finds a valid IBAN`() {
     val matches = SensitiveElement.IBAN.detect("IBAN: DE89370400440532013000")
     assertEquals(1, matches.size)
     assertEquals("DE89370400440532013000", matches.first().value)
+  }
+
+  // ── PASSWORD detection — quoted and unquoted values ───────────────────────
+
+  @Test
+  fun `password detect matches an unquoted value`() {
+    assertEquals(1, SensitiveElement.PASSWORD.detect("password=secret123").size)
+  }
+
+  @Test
+  fun `password detect matches a double-quoted passphrase containing spaces`() {
+    val matches = SensitiveElement.PASSWORD.detect("""password = "my secret phrase"""")
+    assertEquals(1, matches.size)
+    assertTrue(matches.first().value.contains("my secret phrase"))
+  }
+
+  @Test
+  fun `password detect matches a single-quoted passphrase containing spaces`() {
+    val matches = SensitiveElement.PASSWORD.detect("passphrase = 'correct horse battery'")
+    assertEquals(1, matches.size)
+    assertTrue(matches.first().value.contains("correct horse battery"))
+  }
+
+  @Test
+  fun `password detect matches case-insensitively for the label`() {
+    assertEquals(1, SensitiveElement.PASSWORD.detect("Password: hunter2").size)
+    assertEquals(1, SensitiveElement.PASSWORD.detect("PWD=abc").size)
+  }
+
+  @Test
+  fun `password detect does not match a bare word without a label`() {
+    assertTrue(SensitiveElement.PASSWORD.detect("hunter2").isEmpty())
   }
 
   @Test
