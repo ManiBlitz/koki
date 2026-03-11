@@ -303,7 +303,7 @@ enum class SensitiveElement(
         "accountNo",
       ),
     category = SensitiveCategory.FINANCIAL,
-    domains = setOf(SensitivityDomain.PCI_DSS, SensitivityDomain.PII, SensitivityDomain.GDPR),
+    domains = setOf(SensitivityDomain.PII, SensitivityDomain.GDPR),
     tier = SensitivityTier.TIER_0,
     detectionPattern = null,
   ),
@@ -330,7 +330,7 @@ enum class SensitiveElement(
         "sortCode",
       ),
     category = SensitiveCategory.FINANCIAL,
-    domains = setOf(SensitivityDomain.PCI_DSS, SensitivityDomain.PII),
+    domains = setOf(SensitivityDomain.PII),
     tier = SensitivityTier.TIER_1,
     detectionPattern =
       null, // 9-digit ABA numbers are indistinguishable from other numeric IDs without context
@@ -345,7 +345,7 @@ enum class SensitiveElement(
     shortName = "IBAN",
     aliases = listOf("iban", "international_bank_account_number", "internationalBankAccountNumber"),
     category = SensitiveCategory.FINANCIAL,
-    domains = setOf(SensitivityDomain.PCI_DSS, SensitivityDomain.PII, SensitivityDomain.GDPR),
+    domains = setOf(SensitivityDomain.PII, SensitivityDomain.GDPR),
     tier = SensitivityTier.TIER_0,
     detectionPattern = Regex("""\b[A-Z]{2}\d{2}[A-Z0-9]{1,30}\b"""),
   ),

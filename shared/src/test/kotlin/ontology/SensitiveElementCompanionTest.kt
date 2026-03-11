@@ -169,13 +169,16 @@ class SensitiveElementCompanionTest {
   }
 
   @Test
-  fun `byDomain PCI_DSS includes all payment card elements`() {
+  fun `byDomain PCI_DSS includes payment card elements but not bank-account identifiers`() {
     val pciElements = SensitiveElement.byDomain(SensitivityDomain.PCI_DSS)
+    // Payment card data — PCI-DSS applies
     assertTrue(SensitiveElement.CREDIT_CARD_NUMBER in pciElements)
     assertTrue(SensitiveElement.CARD_VERIFICATION_VALUE in pciElements)
     assertTrue(SensitiveElement.CARD_EXPIRATION_DATE in pciElements)
-    assertTrue(SensitiveElement.BANK_ACCOUNT_NUMBER in pciElements)
-    assertTrue(SensitiveElement.IBAN in pciElements)
+    // Bank-account identifiers — governed by financial privacy law, not PCI-DSS
+    assertTrue(SensitiveElement.BANK_ACCOUNT_NUMBER !in pciElements)
+    assertTrue(SensitiveElement.BANK_ROUTING_NUMBER !in pciElements)
+    assertTrue(SensitiveElement.IBAN !in pciElements)
   }
 
   @Test
